@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>愛兒家預班表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: one column card stack — sticky header with month switch, tabs for 畫休假 / 日期總表 / 設定 */
+:root{
+  --bg:#fff8f6; --surface:#ffffff; --ink:#4a3a40; --muted:#9a8590; --line:#f1dfe3;
+  --pink:#f48fa8; --pink-soft:#ffe3ea; --mint:#7ccbb3; --mint-soft:#dff4ec;
+  --butter:#ffe9a8; --sky:#e6eefc; --warn:#e86a5a; --warn-soft:#ffe1dc;
+  --shadow:0 6px 18px rgba(232,140,165,.14);
+  --f-display:"Huninn","Noto Sans TC",system-ui,sans-serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#231d22; --surface:#2e262c; --ink:#f4e8ec; --muted:#b29fa8; --line:#43373e;
+  --pink:#f59ab1; --pink-soft:#4a2e38; --mint:#86d4bc; --mint-soft:#24403a;
+  --butter:#5a4a22; --sky:#2a3346; --warn:#ff8a7a; --warn-soft:#4d2a27; --shadow:0 6px 18px rgba(0,0,0,.3); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#231d22; --surface:#2e262c; --ink:#f4e8ec; --muted:#b29fa8; --line:#43373e;
+  --pink:#f59ab1; --pink-soft:#4a2e38; --mint:#86d4bc; --mint-soft:#24403a;
+  --butter:#5a4a22; --sky:#2a3346; --warn:#ff8a7a; --warn-soft:#4d2a27; --shadow:0 6px 18px rgba(0,0,0,.3); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:16px 10px;display:flex;flex-direction:column;gap:12px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-weight:400;font-size:1.7rem;margin:0;letter-spacing:.04em;display:flex;align-items:center;gap:8px}
+h1 .dot{width:14px;height:14px;border-radius:50%;background:var(--pink);box-shadow:10px -6px 0 -3px var(--mint)}
+.month{display:flex;align-items:center;gap:6px;background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:4px}
+.month button{border:0;background:transparent;color:var(--ink);font-size:1.1rem;width:34px;height:34px;border-radius:50%;cursor:pointer}
+.month button:hover{background:var(--pink-soft)}
+.month span{font-family:var(--f-display);font-size:1.1rem;min-width:7.5em;text-align:center}
+.tabs{display:flex;gap:6px;background:var(--surface);border-radius:999px;padding:5px;border:2px solid var(--line);width:fit-content;max-width:100%;overflow-x:auto}
+.tabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:500;padding:7px 16px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--pink);color:#fff}
+.card{background:var(--surface);border-radius:22px;padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;min-width:0}
+.card h2{font-family:var(--f-display);font-weight:400;font-size:1.2rem;margin:0}
+.hint{color:var(--muted);font-size:.88rem;margin:0}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:500;font-size:.92rem}
+select,input,textarea{font:inherit;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:9px 12px}
+select:focus,input:focus,textarea:focus,button:focus-visible{outline:3px solid var(--pink-soft);outline-offset:1px;border-color:var(--pink)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.row > *{flex:1 1 200px;min-width:0}
+.btn{border:0;font:inherit;font-weight:700;border-radius:999px;padding:10px 20px;cursor:pointer;background:var(--pink);color:#fff;flex:0 0 auto}
+.btn.ghost{background:var(--pink-soft);color:var(--ink)}
+.btn.mint{background:var(--mint);color:#173a30}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .wd{text-align:center;font-size:.8rem;color:var(--muted);font-weight:700}
+.cal .wd.we{color:var(--pink)}
+.day{position:relative;aspect-ratio:1/1;max-width:100%;border-radius:16px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px;transition:transform .12s}
+.day:hover{transform:translateY(-1px);border-color:var(--pink)}
+.day.we{background:var(--sky)}
+.day .n{font-family:var(--f-display);font-size:1.15rem;line-height:1}
+.day .c{font-size:.68rem;color:var(--muted);line-height:1}
+.day.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.day.on .c{color:#fff}
+.day.full:not(.on){border-color:var(--warn);background:var(--warn-soft)}
+.day.full .c{color:var(--warn)}
+.day.on.full{box-shadow:0 0 0 3px var(--warn)}
+.day .tag{position:absolute;top:3px;right:5px;font-size:.6rem;font-weight:700}
+.day:disabled{cursor:not-allowed;opacity:.6}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:4px;border:2px solid var(--line)}
+.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 12px;font-size:.82rem;font-weight:700;background:var(--mint-soft);color:var(--ink)}
+.pill.pink{background:var(--pink-soft)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.yellow{background:var(--butter)}
+/* matrix */
+.tbl-wrap{overflow-x:auto;border-radius:14px;border:2px solid var(--line)}
+table{border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.85rem;min-width:100%}
+th,td{border:1px solid var(--line);text-align:center;padding:5px 4px;min-width:28px;white-space:nowrap}
+th.nm,td.nm{position:sticky;left:0;background:var(--surface);text-align:left;padding:5px 10px;z-index:1;font-weight:700}
+thead th{background:var(--surface);font-weight:500}
+th.we,td.we{background:var(--sky)}
+td.off{background:var(--pink);color:#fff;font-weight:700}
+tfoot td{font-weight:700;background:var(--surface)}
+tfoot td.over{background:var(--warn-soft);color:var(--warn)}
+td.tot,th.tot{background:var(--mint-soft);font-weight:700}
+.bydate{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.bd{border:2px solid var(--line);border-radius:14px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.bd.we{background:var(--sky)}
+.bd.over{border-color:var(--warn)}
+.bd b{font-family:var(--f-display);font-weight:400}
+.bd .names{font-size:.88rem;color:var(--ink);word-break:break-all}
+.bd .none{color:var(--muted);font-size:.85rem}
+.note-list{display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.note-list div{background:var(--bg);border-radius:12px;padding:8px 12px}
+.empty{text-align:center;color:var(--muted);padding:24px 8px;border:2px dashed var(--line);border-radius:18px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 20px;border-radius:999px;font-weight:500;z-index:20;max-width:calc(100% - 32px)}
+.banner{background:var(--butter);border-radius:16px;padding:10px 14px;font-size:.9rem}
+@media (max-width:480px){.day .n{font-size:1rem}.day{border-radius:12px}.cal{gap:4px}h1{font-size:1.4rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head><body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1><span class="dot" aria-hidden="true"></span>愛兒家預班表</h1>
+      <div class="month" role="group" aria-label="選擇月份">
+        <button id="prevM" aria-label="上個月">‹</button>
+        <span id="monthLabel"></span>
+        <button id="nextM" aria-label="下個月">›</button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="draw" aria-selected="true">畫休假</button>
+      <button role="tab" data-tab="sum" aria-selected="false">日期總表</button>
+      <button role="tab" data-tab="set" aria-selected="false" id="setTab">設定</button>
+    </nav>
+  </header>
+
+  <div id="connBanner" class="banner" hidden></div>
+
+  <!-- 畫休假 -->
+  <section id="tab-draw" class="card">
+    <div class="row">
+      <label class="f">我是
+        <select id="who"><option value="">請選擇姓名</option></select>
+      </label>
+      <div class="status" id="myStatus"></div>
+    </div>
+    <div id="lockBanner" class="banner" hidden>這個月的預班已截止，若需調整請洽排班負責人。</div>
+    <div id="calArea"></div>
+    <div class="legend">
+      <span><i style="background:var(--pink);border-color:var(--pink)"></i>我的休假</span>
+      <span><i style="background:var(--sky)"></i>週末</span>
+      <span><i style="background:var(--warn-soft);border-color:var(--warn)"></i>已達每日休假上限</span>
+      <span>數字＝當天已預休人數</span>
+    </div>
+    <label class="f">備註（選填，例如：想連休、特殊需求）
+      <input id="note" maxlength="100" placeholder="例：12/24 若可以想排早班">
+    </label>
+    <div class="row" style="justify-content:flex-end">
+      <button class="btn ghost" id="clearBtn" style="flex:0 0 auto">清除本月</button>
+      <button class="btn" id="saveBtn" style="flex:0 0 auto">送出預休</button>
+    </div>
+  </section>
+
+  <!-- 日期總表 -->
+  <section id="tab-sum" class="card" hidden>
+    <div class="row" style="align-items:center">
+      <h2 id="sumTitle" style="flex:1 1 auto"></h2>
+      <div class="row" style="flex:0 0 auto;gap:8px">
+        <button class="btn ghost" id="copyBtn">複製到 Excel</button>
+        <button class="btn mint" id="csvBtn">下載 CSV</button>
+      </div>
+    </div>
+    <div class="status" id="sumStatus"></div>
+    <div class="tbl-wrap"><table id="matrix"></table></div>
+    <h2>依日期查看</h2>
+    <div class="bydate" id="byDate"></div>
+    <div id="notesBox" hidden>
+      <h2 style="margin-bottom:8px">備註</h2>
+      <div class="note-list" id="notes"></div>
+    </div>
+  </section>
+
+  <!-- 設定 -->
+  <section id="tab-set" class="card" hidden>
+    <h2>排班設定</h2>
+    <div id="adminGate" class="row">
+      <label class="f">管理密碼<input id="pinInput" type="password" autocomplete="off"></label>
+      <button class="btn" id="pinBtn" style="flex:0 0 auto">進入設定</button>
+    </div>
+    <div id="adminBody" hidden style="display:flex;flex-direction:column;gap:14px">
+    <p class="hint">員工名單一行一位，順序就是總表的排列順序。</p>
+    <label class="f">員工名單
+      <textarea id="staffInput" rows="8" placeholder="王小美&#10;林佳佳&#10;陳怡君"></textarea>
+    </label>
+    <div class="row">
+      <label class="f">每日休假人數上限
+        <input id="maxInput" type="number" min="1" max="30">
+      </label>
+      <label class="f">本月預班狀態
+        <select id="lockInput"><option value="open">開放填寫</option><option value="locked">已截止（員工不可再改）</option></select>
+      </label>
+    </div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="saveSetBtn" style="flex:0 0 auto">儲存設定</button></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+</body></html>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</body></html>
+<script src="config.js"></script>
+</body></html>
+<script>
+(function(){
+const WD=["日","一","二","三","四","五","六"];
+const $=id=>document.getElementById(id);
+let db=null, canEdit=false;
+let settings={staff:[],maxPerDay:2,locked:[]};
+let leaves={};          // name -> {days:[], note}
+let draft=new Set(), dirty=false;
+let unsubLeaves=null;
+const now=new Date();
+let ym=fmtYM(new Date(now.getFullYear(), now.getMonth()+1, 1)); // 預設下個月
+try{ const w=localStorage.getItem("pre_who"); if(w) window.__who=w; }catch(e){}
+
+function fmtYM(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
+function parseYM(s){const [y,m]=s.split("-").map(Number);return {y,m}}
+function rocLabel(s){const {y,m}=parseYM(s);return `${y-1911}年${m}月`}
+function daysIn(s){const {y,m}=parseYM(s);return new Date(y,m,0).getDate()}
+function wdOf(s,d){const {y,m}=parseYM(s);return new Date(y,m-1,d).getDay()}
+function hexName(n){return Array.from(n).map(c=>c.codePointAt(0).toString(16)).join("-")}
+function docId(name){return ym+"_"+hexName(name)}
+function isLocked(){return (settings.locked||[]).includes(ym)}
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(t._h);t._h=setTimeout(()=>t.hidden=true,2400)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+// ---------- counts ----------
+function countsBy(exclude){
+  const n=daysIn(ym), c=Array(n+1).fill(0);
+  for(const [name,v] of Object.entries(leaves)){
+    if(name===exclude||!settings.staff.includes(name)) continue;
+    (v.days||[]).forEach(d=>{if(d>=1&&d<=n)c[d]++});
+  }
+  return c;
+}
+
+// ---------- draw tab ----------
+function renderWho(){
+  const sel=$("who"), cur=sel.value||window.__who||"";
+  sel.innerHTML='<option value="">請選擇姓名</option>'+settings.staff.map(s=>`<option ${s===cur?"selected":""}>${esc(s)}</option>`).join("");
+  if(!settings.staff.includes(cur)) sel.value="";
+}
+function loadDraft(){
+  const who=$("who").value;
+  draft=new Set(who&&leaves[who]?leaves[who].days:[]);
+  $("note").value=who&&leaves[who]?(leaves[who].note||""):"";
+  dirty=false;
+}
+function renderCal(){
+  const area=$("calArea"), who=$("who").value;
+  if(!settings.staff.length){
+    area.innerHTML=`<div class="empty">還沒有員工名單。${canEdit?"請到「設定」加入員工姓名。":"請排班負責人先設定員工名單。"}</div>`;
+    $("myStatus").innerHTML="";return;
+  }
+  if(!who){area.innerHTML=`<div class="empty">先選擇你的名字，再點日期畫上休假 🌸</div>`;$("myStatus").innerHTML="";return;}
+  const n=daysIn(ym), first=wdOf(ym,1), others=countsBy(who), max=settings.maxPerDay||99, locked=isLocked();
+  let h=WD.map((w,i)=>`<div class="wd ${i===0||i===6?"we":""}">${w}</div>`).join("");
+  for(let i=0;i<first;i++) h+="<div></div>";
+  for(let d=1;d<=n;d++){
+    const w=wdOf(ym,d), on=draft.has(d), cnt=others[d]+(on?1:0);
+    const fullCls=(!on&&others[d]>=max)||(on&&cnt>max)?"full":"";
+    h+=`<button class="day ${w===0||w===6?"we":""} ${on?"on":""} ${fullCls}" data-d="${d}" ${locked?"disabled":""} aria-pressed="${on}" aria-label="${d}日${on?"，已選休假":""}，已有${others[d]}人預休">
+      ${on?'<span class="tag">休</span>':""}<span class="n">${d}</span><span class="c">${others[d]?others[d]+"人":"·"}</span></button>`;
+  }
+  area.innerHTML=`<div class="cal">${h}</div>`;
+  const saved=leaves[who]?leaves[who].days.length:0;
+  $("myStatus").innerHTML=`<span class="pill pink">已選 ${draft.size} 天</span>`+
+    (dirty?`<span class="pill yellow">尚未送出</span>`:(saved?`<span class="pill">已送出 ✓</span>`:""))+
+    `<span class="pill">每日上限 ${settings.maxPerDay} 人</span>`;
+  $("saveBtn").disabled=locked; $("clearBtn").disabled=locked; $("note").disabled=locked;
+  $("lockBanner").hidden=!locked;
+}
+$("calArea").addEventListener("click",e=>{
+  const b=e.target.closest(".day"); if(!b||b.disabled) return;
+  const d=+b.dataset.d;
+  if(draft.has(d)) draft.delete(d); else {
+    const others=countsBy($("who").value)[d];
+    if(others>=settings.maxPerDay) toast(`${d}日已有 ${others} 人預休，仍可選，但可能需要協調`);
+    draft.add(d);
+  }
+  dirty=true; renderCal();
+});
+$("who").addEventListener("change",()=>{try{localStorage.setItem("pre_who",$("who").value)}catch(e){}; loadDraft(); renderCal();});
+$("note").addEventListener("input",()=>{dirty=true;renderCal()});
+$("clearBtn").addEventListener("click",()=>{draft.clear();dirty=true;renderCal()});
+$("saveBtn").addEventListener("click",async()=>{
+  const who=$("who").value; if(!who) return toast("請先選擇姓名");
+  if(!db) return toast("目前無法連線儲存，請確認已登入後重新整理");
+  $("saveBtn").disabled=true;
+  try{
+    await db.doc("leaves/"+docId(who)).set({ym,name:who,days:[...draft].sort((a,b)=>a-b),note:$("note").value.trim(),updatedAt:Date.now()});
+    dirty=false; toast(`已送出 ${rocLabel(ym)} 預休 ${draft.size} 天`);
+  }catch(err){toast("送出失敗，請檢查網路後再試");}
+  $("saveBtn").disabled=isLocked(); renderCal();
+});
+
+// ---------- summary tab ----------
+function tableRows(){
+  const n=daysIn(ym);
+  const head=["姓名",...Array.from({length:n},(_,i)=>`${i+1}(${WD[wdOf(ym,i+1)]})`),"合計"];
+  const rows=settings.staff.map(s=>{const set=new Set(leaves[s]?leaves[s].days:[]);return [s,...Array.from({length:n},(_,i)=>set.has(i+1)?"休":""),set.size]});
+  const c=countsBy(null);
+  rows.push(["當日休假人數",...c.slice(1),""]);
+  return [head,...rows];
+}
+function renderSum(){
+  const n=daysIn(ym), c=countsBy(null), max=settings.maxPerDay;
+  $("sumTitle").textContent=`${rocLabel(ym)} 預休總表`;
+  const filled=settings.staff.filter(s=>leaves[s]).length, over=c.filter((v,i)=>i&&v>max).length;
+  $("sumStatus").innerHTML=`<span class="pill">已填 ${filled}／${settings.staff.length} 人</span>`+
+    (settings.staff.length-filled?`<span class="pill yellow">未填：${esc(settings.staff.filter(s=>!leaves[s]).join("、"))}</span>`:"")+
+    (over?`<span class="pill warn">${over} 天超過上限 ${max} 人</span>`:`<span class="pill">無超額日期</span>`)+
+    (isLocked()?`<span class="pill pink">已截止</span>`:"");
+  if(!settings.staff.length){$("matrix").innerHTML=`<tbody><tr><td class="empty" style="border:0">還沒有員工名單</td></tr></tbody>`;$("byDate").innerHTML="";$("notesBox").hidden=true;return;}
+  let h="<thead><tr><th class='nm'>姓名</th>";
+  for(let d=1;d<=n;d++){const w=wdOf(ym,d);h+=`<th class="${w===0||w===6?"we":""}">${d}<br><small>${WD[w]}</small></th>`}
+  h+="<th class='tot'>合計</th></tr></thead><tbody>";
+  for(const s of settings.staff){
+    const set=new Set(leaves[s]?leaves[s].days:[]);
+    h+=`<tr><td class="nm">${esc(s)}</td>`;
+    for(let d=1;d<=n;d++){const w=wdOf(ym,d);h+=set.has(d)?`<td class="off">休</td>`:`<td class="${w===0||w===6?"we":""}"></td>`}
+    h+=`<td class="tot">${set.size}</td></tr>`;
+  }
+  h+="</tbody><tfoot><tr><td class='nm'>休假人數</td>";
+  for(let d=1;d<=n;d++) h+=`<td class="${c[d]>max?"over":""}">${c[d]||""}</td>`;
+  h+="<td class='tot'></td></tr></tfoot>";
+  $("matrix").innerHTML=h;
+  let b="";
+  for(let d=1;d<=n;d++){
+    const w=wdOf(ym,d), names=settings.staff.filter(s=>leaves[s]&&leaves[s].days.includes(d));
+    b+=`<div class="bd ${w===0||w===6?"we":""} ${names.length>max?"over":""}"><b>${parseYM(ym).m}/${d}（${WD[w]}）${names.length?` · ${names.length}人`:""}</b>`+
+      (names.length?`<span class="names">${esc(names.join("、"))}</span>`:`<span class="none">無人預休</span>`)+`</div>`;
+  }
+  $("byDate").innerHTML=b;
+  const notes=settings.staff.filter(s=>leaves[s]&&leaves[s].note);
+  $("notesBox").hidden=!notes.length;
+  $("notes").innerHTML=notes.map(s=>`<div><b>${esc(s)}</b>：${esc(leaves[s].note)}</div>`).join("");
+}
+$("copyBtn").addEventListener("click",async()=>{
+  const tsv=tableRows().map(r=>r.join("\t")).join("\n");
+  try{await navigator.clipboard.writeText(tsv);toast("已複製，可直接貼到 Excel")}
+  catch(e){toast("瀏覽器不允許複製，請改用下載 CSV")}
+});
+$("csvBtn").addEventListener("click",async()=>{
+  const csv="﻿"+tableRows().map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download=`預休總表_${rocLabel(ym)}.csv`;document.body.appendChild(a);a.click();a.remove();
+});
+
+// ---------- settings tab ----------
+function renderSet(){
+  $("staffInput").value=settings.staff.join("\n");
+  $("maxInput").value=settings.maxPerDay;
+  $("lockInput").value=isLocked()?"locked":"open";
+  $("lockInput").previousSibling.textContent=`${rocLabel(ym)} 預班狀態`;
+}
+$("saveSetBtn").addEventListener("click",async()=>{
+  if(!db) return;
+  const staff=[...new Set($("staffInput").value.split("\n").map(s=>s.trim()).filter(Boolean))];
+  const max=Math.max(1,parseInt($("maxInput").value,10)||1);
+  let locked=(settings.locked||[]).filter(x=>x!==ym);
+  if($("lockInput").value==="locked") locked.push(ym);
+  try{await db.doc("settings/main").set({staff,maxPerDay:max,locked});toast("設定已儲存")}
+  catch(e){toast("儲存失敗，請檢查網路後再試")}
+});
+
+$("pinBtn").addEventListener("click",()=>{
+  if($("pinInput").value===String(window.ADMIN_PIN||"")){canEdit=true;$("adminGate").hidden=true;$("adminBody").hidden=false;renderSet();try{sessionStorage.setItem("pre_admin","1")}catch(e){}}
+  else toast("密碼不正確");
+});
+try{if(sessionStorage.getItem("pre_admin")==="1"){canEdit=true;$("adminGate").hidden=true;$("adminBody").hidden=false}}catch(e){}
+// ---------- tabs & month ----------
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  ["draw","sum","set"].forEach(t=>$("tab-"+t).hidden=t!==b.dataset.tab);
+  renderAll();
+}));
+function shiftMonth(k){
+  if(dirty&&!confirmLeave()) return;
+  const {y,m}=parseYM(ym); ym=fmtYM(new Date(y,m-1+k,1)); subscribeLeaves(); renderAll();
+}
+function confirmLeave(){toast("你有尚未送出的預休，請先送出或清除");return false}
+$("prevM").addEventListener("click",()=>shiftMonth(-1));
+$("nextM").addEventListener("click",()=>shiftMonth(1));
+
+function renderAll(){
+  $("monthLabel").textContent=rocLabel(ym);
+  renderWho(); if(!dirty) loadDraft(); renderCal(); renderSum(); if(canEdit) renderSet();
+}
+
+function subscribeLeaves(){
+  if(unsubLeaves) unsubLeaves();
+  leaves={}; dirty=false;
+  if(!db) return;
+  unsubLeaves=db.collection("leaves").where("ym","==",ym).onSnapshot(snap=>{
+    const next={};
+    snap.docs.forEach(d=>{const v=d.data();if(v&&v.name) next[v.name]={days:v.days||[],note:v.note||""}});
+    leaves=next; renderAll();
+  },()=>showConn("讀取資料時發生問題，請重新整理頁面。"));
+}
+function showConn(msg){$("connBanner").textContent=msg;$("connBanner").hidden=false}
+
+renderAll();
+(()=>{
+  if(!window.firebase||!window.FIREBASE_CONFIG||!window.FIREBASE_CONFIG.projectId){showConn("尚未設定 Firebase，請依說明填寫 config.js。");return}
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  db=firebase.firestore();
+  db.doc("settings/main").onSnapshot(s=>{
+    const v=s.data();
+    if(v) settings={staff:v.staff||[],maxPerDay:v.maxPerDay||2,locked:v.locked||[]};
+    renderAll();
+  },()=>showConn("讀取設定時發生問題，請重新整理頁面。"));
+  subscribeLeaves();
+})();
+})();
+</script>
+</body></html>

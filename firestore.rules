@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 預休資料：所有人可讀；寫入時檢查欄位格式
+    match /leaves/{id} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['ym','name','days','note','updatedAt'])
+        && request.resource.data.ym is string
+        && request.resource.data.ym.matches('^[0-9]{4}-[0-9]{2}$')
+        && request.resource.data.name is string
+        && request.resource.data.days is list
+        && request.resource.data.days.size() <= 31
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 100
+        // 已截止的月份不可再修改
+        && !(request.resource.data.ym in get(/databases/$(database)/documents/settings/main).data.get('locked', []));
+      allow delete: if false;
+    }
+    // 排班設定
+    match /settings/main {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasOnly(['staff','maxPerDay','locked'])
+        && request.resource.data.staff is list
+        && request.resource.data.maxPerDay is int
+        && request.resource.data.locked is list;
+    }
+  }
+}
